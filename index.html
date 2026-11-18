@@ -1,0 +1,1144 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#141A22">
+<title>受迫振动与共振 · 黑箱寻峰 | 大学物理虚拟仿真实验</title>
+<style>
+:root{
+  --bg:#F4F6F9;
+  --card:#FFFFFF;
+  --ink:#1F2A37;
+  --sub:#5B6775;
+  --mute:#8A94A3;
+  --line:#E3E8EF;
+  --accent:#165D8A;
+  --accent-soft:#E8F1F8;
+  --warm:#D9762B;
+  --warm-soft:#FDF0E4;
+  --ok:#1E8A5F;
+  --bad:#C0392B;
+  --stage:#141A22;
+  --stage-2:#1B2632;
+  --r:14px;
+  --shadow:0 1px 2px rgba(20,30,45,.05),0 6px 18px rgba(20,30,45,.06);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--ink);
+  font:15px/1.6 system-ui,-apple-system,"Segoe UI","Microsoft YaHei","PingFang SC","Hiragino Sans GB",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+h1,h2,h3,p,ul{margin:0}
+
+/* ---------- 顶栏 ---------- */
+.top{
+  background:linear-gradient(135deg,#123047 0%,#165D8A 60%,#1B729E 100%);
+  color:#fff;padding:14px 18px 16px;
+}
+.top-in{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:10px;flex:1 1 auto;min-width:0}
+.brand b{font-size:18px;letter-spacing:.5px;font-weight:700}
+.brand span{font-size:12.5px;opacity:.72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{
+  background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.18);
+  border-radius:999px;padding:4px 11px;font-size:12.5px;white-space:nowrap;
+}
+.chip b{font-variant-numeric:tabular-nums;font-weight:700}
+.chip.warn{background:rgba(255,170,80,.22);border-color:rgba(255,190,120,.4)}
+
+/* ---------- 布局 ---------- */
+.wrap{max-width:1180px;margin:0 auto;padding:16px 18px 40px;display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);gap:16px;align-items:start}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);border:1px solid var(--line);overflow:hidden}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.card-h h2{font-size:14.5px;font-weight:700;letter-spacing:.3px;display:flex;align-items:center;gap:8px}
+.card-h h2::before{content:"";width:3px;height:14px;border-radius:2px;background:var(--accent)}
+.card-h .hint{font-size:12.5px;color:var(--mute)}
+.card-b{padding:14px 16px}
+
+/* ---------- 仿真舞台 ---------- */
+.stage{position:relative;background:radial-gradient(120% 120% at 30% 0%,#22303E 0%,var(--stage) 60%);}
+#sim{display:block;width:100%;height:auto;touch-action:manipulation}
+.stage-tags{position:absolute;left:12px;top:12px;display:flex;gap:8px;flex-wrap:wrap;pointer-events:none}
+.tag{background:rgba(9,15,22,.62);border:1px solid rgba(255,255,255,.11);color:#DCE6F0;border-radius:8px;padding:3px 9px;font-size:12px;backdrop-filter:blur(6px)}
+.tag b{color:#7FD3FF;font-variant-numeric:tabular-nums}
+.stage-note{position:absolute;right:12px;bottom:10px;color:#7C8AA0;font-size:11.5px;pointer-events:none}
+
+/* ---------- 控制区 ---------- */
+.ctl{display:flex;flex-direction:column;gap:14px}
+.freq-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.freq-val{font-size:30px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums;line-height:1}
+.freq-val small{font-size:14px;font-weight:600;color:var(--mute);margin-left:3px;letter-spacing:0}
+.freq-lab{font-size:12.5px;color:var(--mute);letter-spacing:.4px;text-transform:uppercase}
+.nudge{display:flex;gap:6px}
+.nudge button{
+  width:38px;height:34px;border-radius:9px;border:1px solid var(--line);background:#fff;
+  font-size:15px;font-weight:700;color:var(--sub);
+}
+.nudge button:active{background:var(--accent-soft)}
+input[type=range]{
+  -webkit-appearance:none;appearance:none;width:100%;height:34px;background:transparent;margin:0;
+}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:99px;background:linear-gradient(90deg,#DCE5EE,#C9D6E3)}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;border:3px solid var(--accent);
+  margin-top:-9px;box-shadow:0 2px 8px rgba(22,93,138,.35);
+}
+input[type=range]::-moz-range-track{height:8px;border-radius:99px;background:#DCE5EE}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid var(--accent)}
+.row{display:flex;gap:10px}
+.btn{
+  flex:1;height:46px;border-radius:11px;font-weight:700;font-size:15px;letter-spacing:.4px;
+  background:var(--accent);color:#fff;box-shadow:0 3px 10px rgba(22,93,138,.26);
+  transition:transform .06s ease,filter .15s ease;
+}
+.btn:active{transform:translateY(1px);filter:brightness(.96)}
+.btn[disabled]{background:#C7D2DE;box-shadow:none;cursor:not-allowed}
+.btn.ghost{background:#fff;color:var(--accent);border:1.5px solid #C6DAE8;box-shadow:none;flex:0 0 auto;padding:0 16px}
+.btn.warm{background:var(--warm);box-shadow:0 3px 10px rgba(217,118,43,.26)}
+.btn.warm[disabled]{background:#C7D2DE}
+
+/* ---------- 图表 ---------- */
+.chart-box{position:relative}
+#chart{display:block;width:100%;height:auto}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--mute);padding:2px 2px 0}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+
+/* ---------- 对话 ---------- */
+.chat-card{display:flex;flex-direction:column;max-height:min(78vh,760px);min-height:min(64vh,560px)}
+.chat-log{flex:1;overflow-y:auto;padding:14px 14px 6px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
+.msg{display:flex;gap:9px;align-items:flex-start;animation:pop .22s ease}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.msg .ava{
+  flex:0 0 28px;width:28px;height:28px;border-radius:9px;background:var(--accent-soft);
+  color:var(--accent);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:2px;
+}
+.msg.user{flex-direction:row-reverse}
+.msg.user .ava{background:var(--warm-soft);color:var(--warm)}
+.bubble{
+  background:#F2F5F9;border-radius:12px 12px 12px 4px;padding:9px 12px;font-size:14px;max-width:88%;
+  white-space:pre-wrap;word-break:break-word;
+}
+.msg.user .bubble{background:var(--accent);color:#fff;border-radius:12px 12px 4px 12px}
+.bubble b{color:var(--accent);font-variant-numeric:tabular-nums}
+.msg.user .bubble b{color:#fff}
+.bubble .em{background:var(--warm-soft);color:var(--warm);border-radius:4px;padding:0 4px;font-weight:700}
+.chat-in{border-top:1px solid var(--line);padding:10px 12px;display:flex;gap:8px;background:#fff}
+.chat-in input{
+  flex:1;min-width:0;height:40px;border-radius:10px;border:1px solid var(--line);background:#F7F9FC;
+  padding:0 12px;outline:none;font-size:14px;
+}
+.chat-in input:focus{border-color:var(--accent);background:#fff}
+.chat-in button{width:64px;height:40px;border-radius:10px;background:var(--accent);color:#fff;font-weight:700;font-size:14px}
+.quick{display:flex;gap:7px;flex-wrap:wrap;padding:0 12px 10px}
+.quick button{
+  border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;font-size:12.5px;color:var(--sub);
+}
+.quick button:active{background:var(--accent-soft);border-color:#BFD8E8}
+
+/* ---------- 结果卡 ---------- */
+.result{padding:14px 16px}
+.score-row{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+.score-num{font-size:34px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.score-num small{font-size:14px;color:var(--mute);font-weight:600;margin-left:2px}
+.badge{display:inline-block;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700}
+.badge.ok{background:#E5F5EE;color:var(--ok)}
+.badge.bad{background:#FBEAE8;color:var(--bad)}
+.badge.neutral{background:#EEF2F7;color:var(--sub)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:13.5px;margin-top:8px}
+.kv dt{color:var(--mute)}
+.kv dd{margin:0;font-variant-numeric:tabular-nums}
+.quiz{border-top:1px dashed var(--line);margin-top:12px;padding-top:12px}
+.quiz p{font-size:13.5px;margin-bottom:8px}
+.opts{display:flex;flex-direction:column;gap:7px}
+.opt{
+  text-align:left;border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 12px;font-size:13.5px;
+}
+.opt:active{background:var(--accent-soft)}
+.opt.pick{border-color:var(--accent);background:var(--accent-soft)}
+.opt.right{border-color:#7ED0AC;background:#E9F7F1}
+.opt.wrong{border-color:#E9A79E;background:#FBEAE8}
+
+/* ---------- 移动端助教速览条 ---------- */
+.ai-strip{display:none}
+@media (max-width:940px){
+  .ai-strip{
+    display:flex;align-items:flex-start;gap:9px;background:var(--accent-soft);
+    border:1px solid #CFE2EE;border-radius:12px;padding:9px 12px;cursor:pointer;
+  }
+  .ai-strip b{color:var(--accent);font-size:12px;flex:0 0 auto;line-height:1.6}
+  .ai-strip span{
+    font-size:13px;color:#2C4A5E;line-height:1.5;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  }
+}
+
+/* ---------- 提示条 ---------- */
+.toast{
+  position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);opacity:0;pointer-events:none;
+  background:#1F2A37;color:#fff;border-radius:10px;padding:9px 16px;font-size:13.5px;z-index:99;
+  transition:opacity .2s,transform .2s;box-shadow:0 8px 24px rgba(0,0,0,.2);
+}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- 响应式 ---------- */
+@media (max-width:940px){
+  .wrap{grid-template-columns:minmax(0,1fr);padding:12px 12px 32px;gap:12px}
+  .top{padding:12px 14px 14px}
+  .top-in{gap:10px}
+  .brand b{font-size:16px}
+  .brand span{display:none}
+  .freq-val{font-size:26px}
+  .chat-card{max-height:none}
+  .chat-log{max-height:46vh}
+}
+@media (max-width:420px){
+  .card-b{padding:12px}
+  .chip{font-size:12px;padding:3px 9px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <b>受迫振动与共振 · 黑箱寻峰</b>
+      <span>大学物理虚拟仿真实验　|　阻尼受迫振动 · 幅频特性</span>
+    </div>
+    <div class="chips">
+      <div class="chip">剩余测量 <b id="cLeft">8</b></div>
+      <div class="chip">驱动频率 <b id="cF">0.90</b> Hz</div>
+      <div class="chip" id="cPhase">准备中</div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="col">
+
+    <section class="card stage">
+      <canvas id="sim" width="720" height="430" aria-label="受迫振动仿真画面"></canvas>
+      <div class="stage-tags">
+        <div class="tag">f = <b id="tagF">0.90</b> Hz</div>
+        <div class="tag">A = <b id="tagA">—</b> mm</div>
+      </div>
+      <div class="stage-note">拖动滑块调节电机转速</div>
+    </section>
+
+    <div class="ai-strip" id="aiStrip">
+      <b>助教</b><span id="aiStripText">正在准备实验台…</span>
+    </div>
+
+    <section class="card">
+      <div class="card-b ctl">
+        <div class="freq-head">
+          <div>
+            <div class="freq-lab">驱动频率</div>
+            <div class="freq-val"><span id="fVal">0.90</span><small>Hz</small></div>
+          </div>
+          <div class="nudge">
+            <button id="fDown" aria-label="减小频率">−</button>
+            <button id="fUp" aria-label="增大频率">+</button>
+          </div>
+        </div>
+        <input id="fRange" type="range" min="0.60" max="1.60" step="0.01" value="0.90" aria-label="驱动频率">
+        <div class="row">
+          <button class="btn" id="btnMeasure">测量振幅</button>
+          <button class="btn warm" id="btnSubmit" disabled>提交答案</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-h">
+        <h2>振幅—频率特性</h2>
+        <div class="hint" id="chartHint">还没有测量数据</div>
+      </div>
+      <div class="card-b chart-box">
+        <canvas id="chart" width="720" height="330" aria-label="振幅频率散点图"></canvas>
+        <div class="legend">
+          <span><i style="background:#165D8A"></i>已测数据点</span>
+          <span><i style="background:#D9762B"></i>你的估计峰位</span>
+          <span><i style="background:#B9C4D0"></i>真实幅频曲线（提交后显示）</span>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="col">
+
+    <section class="card" id="resultCard" style="display:none">
+      <div class="card-h"><h2>实验评估</h2><div class="hint" id="resHint"></div></div>
+      <div class="result" id="resultBody"></div>
+    </section>
+
+    <section class="card chat-card">
+      <div class="card-h">
+        <h2>AI 实验助教</h2>
+        <div class="hint" id="chatHint">状态感知 · 会盯你的数据</div>
+      </div>
+      <div class="chat-log" id="log" aria-live="polite"></div>
+      <div class="quick" id="quick"></div>
+      <div class="chat-in">
+        <input id="chatInput" placeholder="和助教说句话，或直接报一个频率…" autocomplete="off" enterkeyhint="send">
+        <button id="chatSend">发送</button>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+<script>
+(function(){
+"use strict";
+
+/* =========================================================
+   0. 工具
+   ========================================================= */
+const $ = s => document.querySelector(s);
+const clamp = (x,a,b) => x<a?a:(x>b?b:x);
+const fmt = (x,n=2) => x.toFixed(n);
+
+/* =========================================================
+   1. 物理模型（隐藏参数 = 黑箱）
+   ---------------------------------------------------------
+   弹簧-阻尼并联，底座被电机驱动： y_s(t) = Y·sin(ωt)
+   质量块位移 u 满足   m·ü + c·u̇ + k·u = k·y_s + c·ẏ_s
+   稳态振幅      A(ω) = Y·√(k²+(cω)²) / √((k−mω²)²+(cω)²)
+   ========================================================= */
+const P = {
+  m: 0.5,          // kg
+  Y: 0.006,        // m 电机振幅 6 mm
+  k: 20,           // N/m
+  c: 0.7,          // N·s/m
+  f0: 1.0,         // 固有频率 Hz
+  zeta: 0.11,      // 阻尼比
+  fPeak: 1.0,      // 共振（幅频峰值）频率
+  Apeak: 30        // 峰值振幅 mm
+};
+
+function ampOf(f){
+  const w = 2*Math.PI*f, k=P.k, m=P.m, c=P.c, Ymm=P.Y*1000;
+  const num = Ymm*Math.sqrt(k*k + c*w*c*w);
+  const den = Math.sqrt(Math.pow(k-m*w*w,2) + Math.pow(c*w,2));
+  return num/den;
+}
+
+function newLevel(){
+  P.f0   = 0.93 + Math.random()*0.19;    // 0.93 ~ 1.12 Hz
+  P.zeta = 0.090 + Math.random()*0.050;  // 0.090 ~ 0.140
+  P.k = P.m*Math.pow(2*Math.PI*P.f0,2);
+  P.c = 2*P.zeta*Math.sqrt(P.k*P.m);
+  let best=0, bf=1.0;
+  for(let f=0.600; f<=1.6001; f+=0.0004){
+    const A = ampOf(f);
+    if(A>best){ best=A; bf=f; }
+  }
+  P.fPeak = bf; P.Apeak = best;
+}
+
+// RK4 一步
+function rk4(t,u,v,dt,w){
+  const acc=(tt,uu,vv)=>{
+    const ys  = P.Y*Math.sin(w*tt);
+    const ysd = P.Y*w*Math.cos(w*tt);
+    return (-P.k*(uu-ys) - P.c*(vv-ysd))/P.m;
+  };
+  const k1u=v,            k1v=acc(t,u,v);
+  const k2u=v+0.5*dt*k1v, k2v=acc(t+0.5*dt,u+0.5*dt*k1u,v+0.5*dt*k1v);
+  const k3u=v+0.5*dt*k2v, k3v=acc(t+0.5*dt,u+0.5*dt*k2u,v+0.5*dt*k2v);
+  const k4u=v+dt*k3v,     k4v=acc(t+dt,u+dt*k3u,v+dt*k3v);
+  return [u + dt/6*(k1u+2*k2u+2*k3u+k4u), v + dt/6*(k1v+2*k2v+2*k3v+k4v)];
+}
+
+// 数值"测量"：从静止起振 → 待稳定 → 取后两周期峰值
+function measureNumeric(f){
+  const w = 2*Math.PI*f, dt = 1/1600;
+  let t=0,u=0,v=0;
+  const n1 = Math.round(Math.max(7, 5/f)/dt);
+  for(let i=0;i<n1;i++){ const r=rk4(t,u,v,dt,w); u=r[0]; v=r[1]; t+=dt; }
+  const n2 = Math.round(Math.max(2/f,1.2)/dt);
+  let mx=0;
+  for(let i=0;i<n2;i++){ const r=rk4(t,u,v,dt,w); u=r[0]; v=r[1]; t+=dt; if(Math.abs(u)>mx) mx=Math.abs(u); }
+  const noise = 1 + 0.002*Math.sin(f*613.7);   // ±0.2% 仪器重复性
+  return mx*1000*noise;
+}
+
+/* =========================================================
+   2. 实验状态
+   ========================================================= */
+const ST = {
+  phase: "intro",          // intro | run | done
+  f: 0.90,
+  pts: [],                 // {f, A}
+  left: 8,
+  max: 8,
+  measuring: false,
+  answer: null,
+  score: null,
+  quizIdx: 0,
+  quizOk: 0,
+  quizDone: false
+};
+
+/* =========================================================
+   3. 画布
+   ========================================================= */
+function setupCanvas(cvs, w, h){
+  const dpr = Math.min(window.devicePixelRatio||1, 2);
+  cvs.width = Math.round(w*dpr);
+  cvs.height = Math.round(h*dpr);
+  cvs.style.aspectRatio = w+" / "+h;
+  const ctx = cvs.getContext("2d");
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx, w, h};
+}
+/* 自适应画布：逻辑宽度跟随容器，约 1:1 显示，避免文字被缩到看不清 */
+let simC = null, chC = null, canvasW = 0;
+
+function fitCanvases(force){
+  const elS = $("#sim"), elC = $("#chart");
+  if(!elS || !elC) return false;
+  const wS = Math.round(elS.getBoundingClientRect().width);
+  if(!wS) return false;
+  if(!force && Math.abs(wS - canvasW) < 16) return false;
+  canvasW = wS;
+  const wC = Math.max(300, Math.round(elC.getBoundingClientRect().width));
+  simC = setupCanvas(elS, Math.max(320, wS), 430);
+  chC  = setupCanvas(elC, wC, 328);
+  return true;
+}
+
+/* ---------- 3.1 装置图 ---------- */
+const PX = 3.0;          // px / mm
+const MASS_REST = 282;   // 质量块静止中心 y
+
+let liveT = 0, liveU = 0, liveV = 0, lastTs = 0;
+
+function stepLive(dt){
+  const w = 2*Math.PI*ST.f;
+  let n = Math.min(Math.ceil(dt/(1/900)), 60);
+  const h = dt/n;
+  for(let i=0;i<n;i++){
+    const r = rk4(liveT, liveU, liveV, h, w);
+    liveU=r[0]; liveV=r[1]; liveT+=h;
+  }
+  bigU = liveU; bigV = liveV;
+}
+let bigU = 0, bigV = 0;
+
+const trail = [];
+
+function drawSim(){
+  const {ctx,w,h} = simC;
+  ctx.clearRect(0,0,w,h);
+
+  const cx = w*0.5;
+  const ys_mm = P.Y*1000*Math.sin(2*Math.PI*ST.f*liveT);
+  const motorY = 96 + ys_mm*PX;
+  const u_mm  = liveU*1000;
+  const massY = MASS_REST + u_mm*PX;
+
+  /* 背景网格 */
+  ctx.save();
+  ctx.strokeStyle = "rgba(255,255,255,.035)";
+  ctx.lineWidth = 1;
+  for(let x=40;x<w;x+=40){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+  for(let y=40;y<h;y+=40){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+  ctx.restore();
+
+  /* 顶部横梁 */
+  ctx.save();
+  const grd = ctx.createLinearGradient(0,44,0,76);
+  grd.addColorStop(0,"#43556A"); grd.addColorStop(1,"#2A3948");
+  ctx.fillStyle = grd;
+  roundRect(ctx, cx-150, 44, 300, 26, 6); ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,.55)"; ctx.font = "600 10.5px system-ui"; ctx.textAlign="center";
+  ctx.fillText("电 机", cx, 62);
+  ctx.restore();
+
+  /* 导轨 */
+  ctx.save();
+  ctx.strokeStyle = "#2A3948"; ctx.lineWidth = 3; ctx.lineCap="round";
+  [cx-92, cx+92].forEach(x=>{ ctx.beginPath(); ctx.moveTo(x,86); ctx.lineTo(x,404); ctx.stroke(); });
+  ctx.restore();
+
+  /* 电机滑块 */
+  ctx.save();
+  const mg = ctx.createLinearGradient(0,motorY-12,0,motorY+18);
+  mg.addColorStop(0,"#5A6E84"); mg.addColorStop(1,"#38495B");
+  ctx.fillStyle = mg;
+  roundRect(ctx, cx-52, motorY-12, 104, 30, 7); ctx.fill();
+  // 转盘：转速可视化
+  const ang = 2*Math.PI*ST.f*liveT;
+  ctx.beginPath(); ctx.arc(cx, motorY+3, 8, 0, Math.PI*2);
+  ctx.fillStyle = "#1B2632"; ctx.fill();
+  ctx.beginPath(); ctx.arc(cx+7*Math.cos(ang), motorY+3+7*Math.sin(ang), 2.6, 0, Math.PI*2);
+  ctx.fillStyle = "#7FD3FF"; ctx.fill();
+  ctx.restore();
+
+  /* 弹簧 */
+  const y1 = motorY+18, y2 = massY-30;
+  ctx.save();
+  ctx.strokeStyle = "#9FB1C4"; ctx.lineWidth = 2.4; ctx.lineJoin="round";
+  ctx.beginPath();
+  const coils = 9, amp = 15, len = y2-y1;
+  ctx.moveTo(cx, y1);
+  for(let i=1;i<=coils*2;i++){
+    const yy = y1 + len*i/(coils*2);
+    ctx.lineTo(cx + (i%2? amp : -amp), yy);
+  }
+  ctx.lineTo(cx, y2);
+  ctx.stroke();
+  ctx.restore();
+
+  /* 阻尼器（左侧，与弹簧并联在电机与质量块之间） */
+  drawDamper(ctx, cx-74, y1+6, y2-6);
+
+  /* 质量块拖影 */
+  trail.push({y:massY, a:1});
+  if(trail.length>14) trail.shift();
+  ctx.save();
+  trail.forEach((p,i)=>{
+    ctx.globalAlpha = (i/trail.length)*0.10;
+    ctx.fillStyle = "#4FA3D1";
+    roundRect(ctx, cx-56, p.y-28, 112, 56, 9); ctx.fill();
+  });
+  ctx.restore();
+
+  /* 质量块 */
+  ctx.save();
+  const bg2 = ctx.createLinearGradient(cx-56, massY-28, cx+56, massY+28);
+  bg2.addColorStop(0,"#2F80A8"); bg2.addColorStop(1,"#14496B");
+  ctx.fillStyle = bg2;
+  roundRect(ctx, cx-56, massY-28, 112, 56, 9); ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,.18)"; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = "rgba(255,255,255,.92)"; ctx.font = "600 17px system-ui"; ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.fillText("m", cx, massY-2);
+  ctx.font = "11px system-ui"; ctx.fillStyle="rgba(255,255,255,.6)";
+  ctx.fillText("质量块", cx, massY+17);
+  ctx.restore();
+
+  /* 位移标尺（窄屏隐藏，避免挤压装置） */
+  const narrow = w < 560;
+  if(!narrow){
+    drawRuler(ctx, 42, 108, 404);
+
+    /* 当前位移指示 */
+    ctx.save();
+    ctx.strokeStyle = "rgba(127,211,255,.45)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx+60, massY); ctx.lineTo(cx+132, massY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx+132, massY); ctx.lineTo(cx+140, MASS_REST); ctx.stroke();
+    ctx.fillStyle = "#7FD3FF"; ctx.font = "600 11.5px system-ui";
+    ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.fillText("位移 " + u_mm.toFixed(1) + " mm", cx+146, MASS_REST);
+    ctx.restore();
+  }
+}
+
+function drawDamper(ctx, x, yA, yB){
+  const len = yB-yA;
+  const body = Math.min(66, Math.max(40, len*0.42));
+  ctx.save();
+  ctx.strokeStyle = "#8B9CB0"; ctx.lineWidth = 2;
+  // 上杆
+  ctx.beginPath(); ctx.moveTo(x, yA); ctx.lineTo(x, yB-body); ctx.stroke();
+  // 活塞
+  ctx.fillStyle = "#8B9CB0";
+  roundRect(ctx, x-13, yB-body-3, 26, 7, 2.5); ctx.fill();
+  // 缸体
+  ctx.strokeStyle = "#738498"; ctx.lineWidth = 2.2;
+  roundRect(ctx, x-15, yB-body+4, 30, body-4, 4); ctx.stroke();
+  ctx.fillStyle = "rgba(115,132,152,.18)";
+  roundRect(ctx, x-15, yB-body+4, 30, body-4, 4); ctx.fill();
+  // 下杆
+  ctx.strokeStyle = "#8B9CB0"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x, yB); ctx.lineTo(x, yB-3); ctx.stroke();
+  ctx.restore();
+}
+
+function drawRuler(ctx, x, yTop, yBot){
+  ctx.save();
+  ctx.strokeStyle = "#3A4A5C"; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(x, yTop); ctx.lineTo(x, yBot); ctx.stroke();
+  ctx.font = "10px system-ui"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  const z0 = (MASS_REST - yTop)/PX;                 // 顶端对应 mm 偏移
+  for(let mm=-40; mm<=50; mm+=10){
+    const y = MASS_REST - mm*PX;
+    if(y < yTop || y > yBot) continue;
+    const zero = mm===0;
+    ctx.strokeStyle = zero ? "#7FD3FF" : "#3A4A5C";
+    ctx.lineWidth = zero ? 1.6 : 1;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + (zero?16:9), y); ctx.stroke();
+    ctx.fillStyle = zero ? "#7FD3FF" : "#5E7183";
+    ctx.fillText(String(mm), x+19, y);
+  }
+  ctx.restore();
+  return z0;
+}
+
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+/* ---------- 3.2 幅频图 ---------- */
+function drawChart(){
+  const {ctx,w,h} = chC;
+  const L=62, R=22, T=18, B=44;
+  const x0=L, x1=w-R, y0=h-B, y1=T;
+  ctx.clearRect(0,0,w,h);
+
+  const fMin=0.60, fMax=1.60;
+  const maxA = Math.max(36, ...ST.pts.map(p=>p.A), ST.answer ? P.Apeak : 0) * 1.12;
+  const X = f => x0 + (f-fMin)/(fMax-fMin)*(x1-x0);
+  const Y = a => y0 - (a/maxA)*(y0-y1);
+
+  /* 网格 */
+  ctx.save();
+  ctx.strokeStyle="#EDF1F6"; ctx.lineWidth=1;
+  for(let f=0.6; f<=1.61; f+=0.2){
+    ctx.beginPath(); ctx.moveTo(X(f),y1); ctx.lineTo(X(f),y0); ctx.stroke();
+  }
+  const stepA = maxA>60?20:10;
+  for(let a=0; a<=maxA; a+=stepA){
+    ctx.beginPath(); ctx.moveTo(x0,Y(a)); ctx.lineTo(x1,Y(a)); ctx.stroke();
+  }
+  ctx.restore();
+
+  /* 坐标轴 */
+  ctx.save();
+  ctx.strokeStyle="#C9D6E3"; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y0); ctx.moveTo(x0,y0); ctx.lineTo(x0,y1); ctx.stroke();
+  ctx.fillStyle="#8A94A3"; ctx.font="11.5px system-ui";
+  ctx.textAlign="center"; ctx.textBaseline="top";
+  for(let f=0.6; f<=1.61; f+=0.2) ctx.fillText(f.toFixed(1), X(f), y0+8);
+  ctx.textAlign="right"; ctx.textBaseline="middle";
+  for(let a=0; a<=maxA; a+=stepA) ctx.fillText(String(Math.round(a)), x0-8, Y(a));
+  ctx.textAlign="center"; ctx.textBaseline="top";
+  ctx.fillStyle="#6B7280"; ctx.font="12px system-ui";
+  ctx.fillText("驱动频率 f / Hz", (x0+x1)/2, h-20);
+  ctx.save();
+  ctx.translate(14,(y0+y1)/2); ctx.rotate(-Math.PI/2);
+  ctx.textAlign="center"; ctx.textBaseline="top";
+  ctx.fillText("振幅 A / mm", 0, 0);
+  ctx.restore();
+  ctx.restore();
+
+  /* 真实曲线（提交后） */
+  if(ST.phase==="done"){
+    ctx.save();
+    ctx.strokeStyle="#B9C4D0"; ctx.lineWidth=2; ctx.setLineDash([5,4]);
+    ctx.beginPath();
+    for(let f=fMin; f<=fMax; f+=0.005){
+      const a=ampOf(f);
+      if(f===fMin) ctx.moveTo(X(f),Y(a)); else ctx.lineTo(X(f),Y(a));
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+    // 峰位
+    ctx.beginPath(); ctx.arc(X(P.fPeak), Y(P.Apeak), 5, 0, Math.PI*2);
+    ctx.fillStyle="#B9C4D0"; ctx.fill();
+    ctx.fillStyle="#8A94A3"; ctx.font="11px system-ui"; ctx.textAlign="center";
+    ctx.fillText("真实峰值 "+P.fPeak.toFixed(3)+" Hz", X(P.fPeak), Y(P.Apeak)-14);
+    ctx.restore();
+  }
+
+  /* 学生估计（提交前随滑块显示） */
+  if(ST.phase!=="done" && ST.pts.length>0){
+    const xa = X(ST.f);
+    ctx.save();
+    ctx.strokeStyle="#D9762B"; ctx.lineWidth=2; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(xa,y1); ctx.lineTo(xa,y0); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle="#D9762B"; ctx.font="11.5px system-ui"; ctx.textAlign="center";
+    ctx.fillText("你的位置 "+ST.f.toFixed(2), xa, y1-6);
+    ctx.restore();
+  }
+
+  /* 数据点 */
+  if(ST.pts.length){
+    const sorted=[...ST.pts].sort((a,b)=>a.f-b.f);
+    ctx.save();
+    ctx.strokeStyle="#165D8A"; ctx.lineWidth=2; ctx.globalAlpha=.55;
+    ctx.beginPath();
+    sorted.forEach((p,i)=>{ i?ctx.lineTo(X(p.f),Y(p.A)):ctx.moveTo(X(p.f),Y(p.A)); });
+    ctx.stroke();
+    ctx.globalAlpha=1;
+    sorted.forEach(p=>{
+      ctx.beginPath(); ctx.arc(X(p.f),Y(p.A),4.5,0,Math.PI*2);
+      ctx.fillStyle="#165D8A"; ctx.fill();
+      ctx.strokeStyle="#fff"; ctx.lineWidth=1.5; ctx.stroke();
+    });
+    // 最佳点标注（放在点右侧，避免和"真实峰值"标签重叠）
+    const best = ST.pts.reduce((a,b)=>b.A>a.A?b:a);
+    ctx.fillStyle="#165D8A"; ctx.font="600 11.5px system-ui"; ctx.textAlign="left";
+    ctx.fillText("最高 "+best.A.toFixed(1)+" mm @ "+best.f.toFixed(2)+" Hz", X(best.f)+9, Y(best.A)+3);
+    ctx.restore();
+  } else {
+    ctx.save();
+    ctx.fillStyle="#B6C2CF"; ctx.font="13px system-ui"; ctx.textAlign="center";
+    ctx.fillText("测一次，点就出来了", (x0+x1)/2, (y0+y1)/2);
+    ctx.restore();
+  }
+}
+
+/* =========================================================
+   4. 主循环
+   ========================================================= */
+function loop(ts){
+  if(!lastTs) lastTs = ts;
+  let dt = (ts-lastTs)/1000;
+  lastTs = ts;
+  dt = clamp(dt, 0, 0.05);
+  if(dt>0) stepLive(dt);
+  drawSim();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* =========================================================
+   5. 界面刷新
+   ========================================================= */
+function syncUI(){
+  $("#fVal").textContent = fmt(ST.f,2);
+  $("#tagF").textContent = fmt(ST.f,2);
+  $("#cF").textContent = fmt(ST.f,2);
+  $("#cLeft").textContent = ST.left;
+  $("#fRange").value = ST.f;
+  $("#chartHint").textContent = ST.pts.length ? ("已测 "+ST.pts.length+" 次　剩余 "+ST.left+" 次") : "还没有测量数据";
+  $("#btnMeasure").disabled = ST.measuring || ST.left<=0 || ST.phase==="done";
+  $("#btnSubmit").disabled = ST.phase==="done" || ST.measuring;
+  const ph = $("#cPhase");
+  if(ST.phase==="done"){ ph.textContent="已完成"; ph.className="chip"; }
+  else if(ST.measuring){ ph.textContent="测量中…"; ph.className="chip warn"; }
+  else { ph.textContent="测量中"; ph.className="chip"; }
+}
+
+function setF(v){
+  ST.f = clamp(Math.round(v*100)/100, 0.60, 1.60);
+  syncUI(); drawChart();
+}
+
+/* =========================================================
+   6. 对话
+   ========================================================= */
+const logEl = $("#log");
+
+function pushMsg(who, html){
+  const d = document.createElement("div");
+  d.className = "msg " + who;
+  d.innerHTML = '<div class="ava">'+(who==="ai"?"AI":"你")+'</div><div class="bubble">'+html+'</div>';
+  logEl.appendChild(d);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function say(html){
+  pushMsg("ai", html);
+  const st = document.getElementById("aiStripText");
+  if(st){
+    const tmp = document.createElement("div");
+    tmp.innerHTML = html;
+    st.textContent = tmp.textContent;
+  }
+}
+function me(html){ pushMsg("user", html); }
+
+function toast(t){
+  const el=$("#toast"); el.textContent=t; el.classList.add("on");
+  clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove("on"), 1900);
+}
+
+/* =========================================================
+   7. 测量
+   ========================================================= */
+function doMeasure(){
+  if(ST.measuring || ST.left<=0 || ST.phase==="done") return;
+  ST.measuring = true; syncUI();
+  const f = ST.f;
+
+  setTimeout(()=>{
+    const A = measureNumeric(f);
+    // 同一频率重复测 → 覆盖旧值
+    const i = ST.pts.findIndex(p=>Math.abs(p.f-f)<0.005);
+    if(i>=0) ST.pts[i].A = A; else ST.pts.push({f, A});
+    ST.left--;
+    ST.measuring = false;
+    $("#tagA").textContent = A.toFixed(1);
+    syncUI(); drawChart();
+    onMeasured(f, A);
+  }, 420);
+}
+
+/* =========================================================
+   8. AI 助教：状态感知
+   ========================================================= */
+function bestPt(){
+  return ST.pts.length ? ST.pts.reduce((a,b)=>b.A>a.A?b:a) : null;
+}
+function lastTwo(){
+  const s=[...ST.pts].sort((a,b)=>a.f-b.f);
+  return s.length>=2 ? [s[s.length-2], s[s.length-1]] : null;
+}
+function bracket(){
+  const s=[...ST.pts].sort((a,b)=>a.f-b.f);
+  for(let j=1;j<s.length-1;j++){
+    if(s[j].A > s[j-1].A+0.4 && s[j].A > s[j+1].A+0.4) return [s[j-1], s[j], s[j+1]];
+  }
+  return null;
+}
+
+function onMeasured(f, A){
+  const n = ST.max - ST.left;
+
+  if(n===1){
+    say("收到第一组数据：<b>f = "+fmt(f,2)+" Hz</b> 时振幅 <b>"+A.toFixed(1)+" mm</b>。<br>把它和你下一步要测的点连起来看，你就能判断峰在哪一侧了。");
+    return;
+  }
+  if(n===2){
+    const s=[...ST.pts].sort((a,b)=>a.f-b.f);
+    const a=s[0], b=s[1];
+    if(b.A>a.A){
+      say("两次数据：<b>"+a.f.toFixed(2)+" Hz → "+a.A.toFixed(1)+" mm</b>，<b>"+b.f.toFixed(2)+" Hz → "+b.A.toFixed(1)+" mm</b>。<br>振幅在上升，说明峰不在 "+a.f.toFixed(2)+" 那一侧——继续往 "+b.f.toFixed(2)+" 的方向走。");
+    } else {
+      say("两次数据：<b>"+a.f.toFixed(2)+" Hz → "+a.A.toFixed(1)+" mm</b>，<b>"+b.f.toFixed(2)+" Hz → "+b.A.toFixed(1)+" mm</b>。<br>振幅在下降，峰应该在 "+a.f.toFixed(2)+" 的左边，往回退一点。");
+    }
+    return;
+  }
+
+  const bp = bracket();
+  if(bp){
+    const mid=bp[1].f, w=(bp[2].f-bp[0].f)/2;
+    say("你刚把峰夹住了：<b>"+bp[1].f.toFixed(2)+" Hz</b> 的 "+bp[1].A.toFixed(1)+" mm 同时高于左右两边。<br>当前位置离它 <b>"+Math.abs(ST.f-bp[1].f).toFixed(2)+" Hz</b>，还有 <b>"+ST.left+"</b> 次机会——往 "+bp[1].f.toFixed(2)+" 附近收。");
+    return;
+  }
+
+  if(ST.left===2) say("只剩 <b>2</b> 次了。按现在的数据，最高点出现在 <b>"+bestPt().f.toFixed(2)+" Hz</b>。把滑块停在你的估计值上，点「提交答案」即可。");
+  else if(ST.left===0) say("测量次数用完了。选一个你认为最接近峰值的频率，点「提交答案」。");
+  else if(n===3) say("数据开始成形了。别一格一格挪——先把区间缩小，再取中点，比均匀扫点省一半次数。");
+}
+
+/* ---------- 意图理解（轻量 NLU） ---------- */
+function parseInput(text){
+  const t = text.trim();
+  if(!t) return {type:"empty"};
+  const nums = (t.match(/\d+(\.\d+)?/g)||[]).map(Number).filter(n=>n>0 && n<10);
+  if(/提交|交卷|就这样|确定了|定了/.test(t)) return {type:"submit"};
+  if(/提示|帮|不会|不知道|没思路|思路|怎么办|该测/.test(t)) return {type:"hint"};
+  if(/哪边|左边|右边|方向|附近|位置/.test(t)) return {type:"dir"};
+  if(/为什么|原理|怎么回事|解释|讲讲/.test(t)) return {type:"why"};
+  if(/重来|重置|换一关|再来|重新开始/.test(t)) return {type:"reset"};
+  if(nums.length) return {type:"freq", value:nums[0]};
+  if(/你好|嗨|hi|hello|在吗/.test(t.toLowerCase())) return {type:"hi"};
+  return {type:"unknown"};
+}
+
+function replyHint(){
+  const bp = bracket();
+  if(ST.pts.length===0){
+    say("先测两个点把方向定下来。建议测 <b>0.90 Hz</b> 和 <b>1.20 Hz</b>——一个偏慢、一个偏快，两侧夹一下，就知道峰大致在中间还是在外侧。");
+    return;
+  }
+  if(ST.pts.length===1){
+    const p=ST.pts[0];
+    const lo = clamp(p.f-0.25,0.60,1.60), hi = clamp(p.f+0.25,0.60,1.60);
+    say("现在只有 <b>"+p.f.toFixed(2)+" Hz</b> 一个点。再测一个距离它 <b>0.25 Hz</b> 左右的点，比如 <b>"+hi.toFixed(2)+"</b> 或 <b>"+lo.toFixed(2)+"</b>，比较两者大小就知道下一个方向。");
+    return;
+  }
+  if(bp){
+    say("峰已经在 <b>"+bp[0].f.toFixed(2)+"</b> 和 <b>"+bp[2].f.toFixed(2)+"</b> 之间了，中点约 <b>"+bp[1].f.toFixed(2)+"</b>。剩 "+ST.left+" 次，一次测中点、一次校验就能定下来——比你一步步挪省事。");
+    return;
+  }
+  const s=[...ST.pts].sort((a,b)=>a.f-b.f), a=s[0], b=s[s.length-1];
+  if(b.A>a.A){
+    say("目前左边 "+a.f.toFixed(2)+" 低、右边 "+b.f.toFixed(2)+" 高，峰在右侧。下一步把区间往右收，步长取现在区间的一半左右。");
+  } else {
+    say("目前左边 "+a.f.toFixed(2)+" 高、右边 "+b.f.toFixed(2)+" 低，峰在左侧。往左收，步长减半。");
+  }
+}
+
+function replyDir(){
+  const lt = lastTwo();
+  if(!lt){ say("还只有 "+ST.pts.length+" 个点，判断不了方向。再多测一个点就能看出来。"); return; }
+  const [a,b]=lt;
+  if(Math.abs(a.A-b.A)<0.3){
+    say("这两个点振幅几乎一样（"+a.A.toFixed(1)+" mm 对 "+b.A.toFixed(1)+" mm），说明峰大概率就在它们中间，或者正好在中间偏一点。");
+  } else if(b.A>a.A){
+    say("从 <b>"+a.f.toFixed(2)+"</b> 到 <b>"+b.f.toFixed(2)+"</b>，振幅从 "+a.A.toFixed(1)+" 涨到 "+b.A.toFixed(1)+" mm，所以在上升段——峰在 <b>"+b.f.toFixed(2)+" Hz 更往右</b> 的方向。");
+  } else {
+    say("从 <b>"+a.f.toFixed(2)+"</b> 到 <b>"+b.f.toFixed(2)+"</b>，振幅从 "+a.A.toFixed(1)+" 掉到 "+b.A.toFixed(1)+" mm，说明已经越过峰了——峰在 <b>"+b.f.toFixed(2)+" Hz 更往左</b>。");
+  }
+}
+
+function replyWhy(){
+  say("这套装置的方程是：<br><b>m·ü + c·u̇ + k·u = k·y<sub>s</sub> + c·ẏ<sub>s</sub></b><br>稳态振幅 <b>A(ω) = Y·√(k²+(cω)²) / √((k−mω²)²+(cω)²)</b>。<br>分母里 (k−mω²) 这一项在 <b>ω≈√(k/m)</b> 时接近零，整个分母只剩阻尼项 cω 在兜底——阻尼越小，分母被压得越低，振幅就越大。所以「峰值位置 ≈ 固有频率」，而阻尼决定它有多尖。");
+}
+
+/* =========================================================
+   9. 评估
+   ========================================================= */
+function analyze(){
+  const s=[...ST.pts].sort((a,b)=>a.f-b.f);
+  const gaps=[];
+  for(let i=1;i<s.length;i++) gaps.push(Math.abs(s[i].f-s[i-1].f));
+  const bp = bracket();
+  let shrink=0;
+  for(let i=1;i<gaps.length;i++) if(gaps[i] < gaps[i-1]*0.85) shrink++;
+  const shrinkRatio = gaps.length>1 ? shrink/(gaps.length-1) : 0;
+  const allBig = gaps.length && gaps.every(g=>g>=0.15);
+
+  let label, comment;
+  if(bp && shrinkRatio>=0.4){
+    label="区间收缩法"; comment="你已经会用「先夹住、再取中点」的二分思路了，这是标准的实验寻峰策略。";
+  } else if(bp){
+    label="单向逼近"; comment="你找到了峰所在的区间，但步长收得不够快，多花了次数。";
+  } else if(allBig){
+    label="粗略扫点"; comment="每次间隔都很大，没有在峰附近加密，等于在大范围里瞎撞。";
+  } else {
+    label="随机试探"; comment="测量点没有明显的收敛规律，下次试试「先粗后细、每次步长减半」。";
+  }
+  return {label, comment, gaps, shrinkRatio, bracketed: !!bp};
+}
+
+function submitAnswer(){
+  if(ST.phase==="done") return;
+  ST.phase="done"; ST.answer=ST.f;
+  const err = Math.abs(ST.answer - P.fPeak)/P.fPeak;
+  const acc = err<=0.01?50 : err<=0.02?43 : err<=0.03?35 : err<=0.05?22 : 8;
+  const used = ST.pts.length;
+  const eff = used<=4?25 : used===5?22 : used===6?18 : used===7?14 : 10;
+  const a = analyze();
+  const strat = a.label==="区间收缩法"?25 : a.label==="单向逼近"?18 : a.label==="粗略扫点"?12 : 8;
+  ST.score = {err, acc, eff, strat, total: acc+eff+strat, label:a.label, comment:a.comment};
+
+  syncUI(); drawChart();
+  renderResult();
+  say("提交完成。你的答案 <b>"+fmt(ST.answer,2)+" Hz</b>，真实峰值 <b>"+P.fPeak.toFixed(3)+" Hz</b>，相对误差 <b>"+(err*100).toFixed(2)+"%</b>。"+
+      (err<=0.03 ? "<br>判据是 3% 以内算命中——<b>过关</b>。" : "<br>判据是 3% 以内——<b>差了一点</b>，看下面的曲线复盘一下。"));
+  saySoon("顺便问两题，看看你是真懂了还是碰巧对：");
+  setTimeout(startQuiz, 700);
+}
+
+function saySoon(t){ setTimeout(()=>say(t), 450); }
+
+/* =========================================================
+   10. 结果卡 + 随堂问题
+   ========================================================= */
+const QUIZ = [
+  {
+    q: "阻尼比从 0.09 增大到 0.14，共振峰会怎么变？",
+    opts: ["峰值升高、峰变窄", "峰值降低、峰变宽", "峰值和宽度都不变，只是位置右移", "峰值升高、峰变宽"],
+    ok: 1,
+    why: "阻尼耗散越大，共振时被「压」得越低，同时共振带被拉宽——这就是为什么 Q = 1/(2ζ) 会随阻尼下降。"
+  },
+  {
+    q: "系统进入稳态受迫振动后，为什么偏偏在共振频率上振幅最大？",
+    opts: ["因为此时驱动力与速度同相，每个周期输入的能量最多", "因为此时弹簧的劲度系数变大", "因为此时质量会变小", "因为共振时阻尼消失"],
+    ok: 0,
+    why: "位移滞后驱动力 90° 时，驱动力方向始终与速度同向，做功功率 P = F·v 恒为正、每周期输入能量最大，振幅才会被推到最大。"
+  },
+  {
+    q: "把同一套装置搬到月球（重力只有 1/6）上，共振频率会怎样？",
+    opts: ["变小，约变成原来的 1/√6", "保持不变", "变大", "先变小后变大"],
+    ok: 1,
+    why: "ω₀ = √(k/m) 只跟弹簧刚度和质量有关，与重力加速度无关；重力只是把平衡位置往下移了，不改固有频率。"
+  }
+];
+
+function renderResult(){
+  const card=$("#resultCard");
+  card.style.display="";
+  const sc=ST.score;
+  const hit = sc.err<=0.03;
+  $("#resHint").textContent = hit ? "命中" : "未命中";
+  $("#resultBody").innerHTML =
+    '<div class="score-row">'+
+      '<div class="score-num">'+sc.total+'<small>/100</small></div>'+
+      '<span class="badge '+(hit?"ok":"bad")+'">'+(hit?"命中 3% 以内":"误差偏大")+'</span>'+
+    '</div>'+
+    '<dl class="kv">'+
+      '<dt>你的答案</dt><dd>'+fmt(ST.answer,2)+' Hz</dd>'+
+      '<dt>真实峰值</dt><dd>'+P.fPeak.toFixed(3)+' Hz</dd>'+
+      '<dt>相对误差</dt><dd>'+(sc.err*100).toFixed(2)+' %</dd>'+
+      '<dt>测量次数</dt><dd>'+ST.pts.length+' 次</dd>'+
+      '<dt>搜索策略</dt><dd>'+sc.label+'　<span style="color:#5B6775">'+sc.strat+'/25</span></dd>'+
+    '</dl>'+
+    '<div style="margin-top:10px;font-size:13.5px;color:#5B6775;line-height:1.65">'+sc.comment+'</div>'+
+    '<div class="quiz" id="quizBox"></div>';
+  card.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+
+let quizAnswered=false;
+
+function startQuiz(){
+  if(ST.quizIdx>=QUIZ.length){
+    renderQuizDone(); return;
+  }
+  const q=QUIZ[ST.quizIdx], box=$("#quizBox");
+  if(!box) return;
+  box.innerHTML =
+    '<p><b>'+(ST.quizIdx+1)+'.</b> '+q.q+'</p>'+
+    '<div class="opts">'+q.opts.map((o,i)=>'<button class="opt" data-i="'+i+'">'+String.fromCharCode(65+i)+'. '+o+'</button>').join('')+'</div>';
+  quizAnswered=false;
+  box.querySelectorAll(".opt").forEach(b=>{
+    b.onclick=()=>{
+      if(quizAnswered) return;
+      quizAnswered=true;
+      const i=+b.dataset.i, ok=(i===q.ok);
+      box.querySelectorAll(".opt").forEach((x,k)=>{
+        if(k===q.ok) x.classList.add("right");
+        else if(k===i) x.classList.add("wrong");
+      });
+      if(ok){
+        ST.quizOk++;
+        say(box.querySelectorAll(".opt")[q.ok].textContent.replace(/^[A-D]\. /,"")+" —— 对。"); 
+      } else {
+        say("这题不对，正确答案是 <b>"+String.fromCharCode(65+q.ok)+"</b>。");
+      }
+      setTimeout(()=>{ say(q.why); ST.quizIdx++; setTimeout(startQuiz, 600); }, 600);
+    };
+  });
+}
+
+function renderQuizDone(){
+  const box=$("#quizBox");
+  if(!box) return;
+  box.innerHTML='<p style="margin-bottom:6px">随堂问题：<b>'+ST.quizOk+" / "+QUIZ.length+"</b> 正确。</p>"+
+    '<button class="btn ghost" id="btnAgain" style="width:100%;margin-top:6px">换一组参数，再来一关</button>';
+  $("#btnAgain").onclick=restart;
+  say("这一关跑完了。想换一组新的未知参数再练一次，点上面的按钮——每次的固有频率和阻尼都是重新生成的，答案没法背。");
+}
+
+function restart(){
+  newLevel();
+  ST.phase="intro"; ST.pts=[]; ST.left=ST.max; ST.answer=null; ST.score=null;
+  ST.quizIdx=0; ST.quizOk=0; quizDone=false;
+  trail.length=0;
+  $("#resultCard").style.display="none";
+  logEl.innerHTML="";
+  liveT=0; liveU=0; liveV=0; lastTs=0;
+  setF(0.90);
+  drawChart();
+  say(introText());
+  setQuick();
+}
+
+/* =========================================================
+   11. 快捷按钮
+   ========================================================= */
+function setQuick(){
+  const q=$("#quick");
+  const list = ST.phase==="done"
+    ? [["换一关再来","换一关"],["看看原理","原理"]]
+    : [["给我个提示","提示"],["峰在哪边","哪边"],["原理是什么","原理"],["重新开始","重来"]];
+  q.innerHTML = list.map(([t,v])=>'<button data-t="'+t+'">'+t+'</button>').join("");
+  q.querySelectorAll("button").forEach(b=>{
+    b.onclick=()=>{ me(b.textContent); handle(b.dataset.t); };
+  });
+}
+
+/* =========================================================
+   12. 输入处理
+   ========================================================= */
+function handle(raw){
+  const it = parseInput(raw);
+  switch(it.type){
+    case "submit": submitAnswer(); break;
+    case "hint":   replyHint(); break;
+    case "dir":    replyDir(); break;
+    case "why":    replyWhy(); break;
+    case "reset":
+      if(confirm("重新开始会清空当前所有测量数据，确定吗？")) restart();
+      break;
+    case "freq":
+      if(ST.phase==="done"){ say("这一关已经提交了，点「换一关再来」可以重开。"); break; }
+      setF(it.value);
+      say("好，频率停在 <b>"+fmt(ST.f,2)+" Hz</b>。要测就点「测量振幅」，觉得这就是峰位就点「提交答案」。");
+      break;
+    case "hi":     say("在的。滑块停在哪、测了几个点、剩下几次，我都看得见——有问题直接问。"); break;
+    case "empty":  break;
+    default:
+      say("这句我没太听懂。你可以：报一个频率（比如「1.05」）、问「峰在哪边」、说「给我提示」，或者说「提交」。");
+  }
+}
+
+$("#chatSend").onclick = ()=>{
+  const inp=$("#chatInput"), v=inp.value.trim();
+  if(!v) return;
+  me(v); inp.value=""; handle(v);
+};
+const stripEl = document.getElementById("aiStrip");
+if(stripEl) stripEl.onclick = ()=>{
+  const c = document.querySelector(".chat-card");
+  if(c) c.scrollIntoView({behavior:"smooth", block:"center"});
+};
+$("#chatInput").addEventListener("keydown", e=>{
+  if(e.key==="Enter"){ e.preventDefault(); $("#chatSend").click(); }
+});
+
+/* =========================================================
+   13. 控件绑定
+   ========================================================= */
+$("#fRange").addEventListener("input", e=>setF(+e.target.value));
+$("#fUp").onclick   = ()=>setF(ST.f+0.01);
+$("#fDown").onclick = ()=>setF(ST.f-0.01);
+$("#btnMeasure").onclick = doMeasure;
+$("#btnSubmit").onclick  = ()=>{
+  if(ST.phase==="done") return;
+  if(confirm("确认把你现在的 "+ST.f.toFixed(2)+" Hz 作为答案提交吗？提交后不能继续测量。")) submitAnswer();
+};
+
+document.addEventListener("keydown", e=>{
+  if(e.target.tagName==="INPUT") return;
+  if(e.key==="ArrowRight"){ e.preventDefault(); setF(ST.f+0.01); }
+  if(e.key==="ArrowLeft"){  e.preventDefault(); setF(ST.f-0.01); }
+  if(e.key==="Enter"){ e.preventDefault(); doMeasure(); }
+});
+
+/* =========================================================
+   14. 开场
+   ========================================================= */
+function introText(){
+  return "你好，我是这间实验室的助教。<br>"+
+    "你面前这台装置：顶上是一台调速电机，下面通过一根弹簧和一个阻尼器挂着质量块。电机转速（驱动频率 f）由你调，<b>但这套系统的固有频率是未知的</b>。<br><br>"+
+    "任务：在 <b>"+ST.max+" 次</b>测量之内，找到让振幅<b>最大</b>的驱动频率，误差 <b>3%</b> 以内算命中。<br>"+
+    "拖滑块选频率 → 点「测量振幅」→ 看左边的幅频图 → 最后把滑块停在你的估计值上，按「提交答案」。<br><br>"+
+    "先在 <b>0.90 Hz</b> 和 <b>1.20 Hz</b> 各测一次，你会立刻看出峰在哪一侧。";
+}
+
+fitCanvases(true);
+if(!simC) simC = setupCanvas($("#sim"), 720, 430);
+if(!chC)  chC  = setupCanvas($("#chart"), 720, 328);
+
+newLevel();
+setF(0.90);
+drawChart();
+say(introText());
+setQuick();
+syncUI();
+
+/* 视口变化时重排画布（保持文字清晰度） */
+let rzTimer = 0;
+window.addEventListener("resize", ()=>{
+  clearTimeout(rzTimer);
+  rzTimer = setTimeout(()=>{
+    if(fitCanvases(false)) drawChart();
+  }, 160);
+});
+
+})();
+</script>
+</body>
+</html>
